@@ -5,6 +5,7 @@ import pydeck as pdk
 import altair as alt 
 from datetime import datetime, timedelta
 import time
+import plotly.plotly as py
 
 st.title('COVID19 Dashboard - US')
 
