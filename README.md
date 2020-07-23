@@ -1,5 +1,5 @@
 # covid19-dashboard
-Simple COVID19 dashboard made using [Streamlit](https://docs.streamlit.io/en/stable/getting_started.html) and deployed with [Heroku](https://www.heroku.com/python). Can be viewed on https://mighty-anchorage-67606.herokuapp.com/ and https://tinyurl.com/covid19-dashboard-tz.
+Simple COVID19 dashboard made using [Streamlit](https://docs.streamlit.io/en/stable/getting_started.html) and deployed with [Heroku](https://www.heroku.com/python). Can be viewed on https://covid19-dashboard-tz.herokuapp.com/.
 
 To run app locally, you should have Streamlit installed.
 ```
