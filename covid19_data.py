@@ -5,7 +5,7 @@ import pydeck as pdk
 import altair as alt 
 from datetime import datetime, timedelta
 import time
-import plotly.plotly as py
+# import plotly.plotly as py
 
 st.title('COVID19 Dashboard - US')
 
@@ -29,6 +29,62 @@ if st.checkbox('Show raw data'):
 ########################################################################################
 st.header('New Cases')
 ########################################################################################
+
+st.subheader('Comparing New Cases in NYC')
+
+# Load Data
+NYC_BORO_URL = ('https://raw.githubusercontent.com/nychealth/coronavirus-data/master/boro/boroughs-case-hosp-death.csv')
+NYC_TESTS_URL = ('https://raw.githubusercontent.com/nychealth/coronavirus-data/master/tests.csv')
+@st.cache
+def load_nyc_data(url):
+    nyc_df = pd.read_csv(url)
+    # nyc_df['date'] = pd.to_datetime(nyc_df['date']).dt.strftime('%Y-%m-%d')
+    return nyc_df
+
+nyc_boro_df = load_nyc_data(NYC_BORO_URL)
+nyc_tests_url = load_nyc_data(NYC_TESTS_URL)
+
+
+def clean_nyc_data_by_metric(metric):
+    column_filter = nyc_boro_df.columns.to_series().str.contains(metric)
+    column_filter.DATE_OF_INTEREST = True
+    columns = nyc_boro_df.columns[column_filter]
+    nyc_cases = nyc_boro_df[columns]
+    nyc_cases.columns = ['date', 'Brooklyn', 'Bronx', 'Manhattan', 'Queens', 'Staten Island']
+
+    nyc_cases_tidy = pd.melt(nyc_cases, ["date"], var_name="borough", value_name="new_cases")
+    return nyc_cases_tidy
+
+
+nyc_cases_df = clean_nyc_data_by_metric('CASE_COUNT')
+nyc_hospitalized_df = clean_nyc_data_by_metric('HOSPITALIZED_COUNT')
+nyc_deaths_df = clean_nyc_data_by_metric('DEATH_COUNT')
+
+
+subset_boro_data = nyc_cases_df
+nyc_boro_input = st.multiselect('NYC Boro', nyc_cases_df.borough.unique().tolist())
+
+if len(nyc_boro_input) > 0:
+    subset_boro_data = nyc_cases_df[nyc_cases_df['borough'].isin(nyc_boro_input)]
+
+nyc_new_cases_graph = alt.Chart(subset_boro_data).transform_filter(
+    alt.datum.new_cases > 0  
+).mark_line().encode(
+    x=alt.X('date:T', title='Date'),
+    y=alt.Y('sum(new_cases):Q',  title='Confirmed New Cases'),
+    color='borough',
+    tooltip = ['date:T', 'borough','sum(new_cases)']
+).properties(
+    width=800,
+    height=600
+).configure_axis(
+    labelFontSize=12,
+    titleFontSize=20
+)
+
+st.altair_chart(nyc_new_cases_graph)
+
+
 
 ########################################################################################
 # Linechart with multiselect
@@ -65,9 +121,9 @@ st.altair_chart(new_cases_graph)
 st.subheader('View States with Highest Number of New Cases')
 all_dates = sorted(df.date.unique().tolist())
 date_option = st.selectbox(
-	'Pick Date',
-	sorted(df.date.unique().tolist()),
-	index=len(all_dates)-1
+    'Pick Date',
+    sorted(df.date.unique().tolist()),
+    index=len(all_dates)-1
 )
 n = st.slider('Top N States New Cases', 0, 50, value=5)
 top_n_df = df[df['date']==date_option].sort_values('new_cases', ascending=False).head(n)
