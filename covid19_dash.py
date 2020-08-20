@@ -14,8 +14,8 @@ with urlopen('https://raw.githubusercontent.com/plotly/datasets/master/geojson-c
 external_stylesheets = [dbc.themes.BOOTSTRAP, 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app.title = 'COVID19 Dashboard'
+server = app.server
 
-pd.options.display.float_format = '{:,}'.format
 
 class NYCData:
     def __init__(self):

@@ -1,1 +1,1 @@
-web: sh setup.sh && streamlit run covid19_data.py
+web: gunicorn covid19_dash:server 
