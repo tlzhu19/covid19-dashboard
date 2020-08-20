@@ -250,21 +250,28 @@ app.layout = html.Div(children=[
             ),
             html.Div(
                 [
-                    html.H3('New Jersey Counties'),
+                    html.H3('New Jersey Counties', id='header-state'),
+                    dcc.Dropdown(
+                                    id='value-state',
+                                    options=[{'label': s, 'value': s} for s in states.df.state.unique()],
+                                    value='New Jersey',
+                                    clearable=False
+                    ), 
                     dbc.Row(
                         [
                             dbc.Col([
                                 dbc.CardHeader("New Cases"),
                                 dbc.Card(
                                     [
-                                        dcc.Dropdown(
-                                                id='date-nj',
-                                                options=[{'label': d, 'value': d} for d in nj_df.date.unique()],
-                                                value=YESTERDAY,
-                                                clearable=False
-                                        ), 
+                                        dcc.DatePickerSingle(
+                                            id='date-state',
+                                            min_date_allowed=nyc_dates[0],
+                                            max_date_allowed=nyc_dates[-1],
+                                            initial_visible_month=YESTERDAY,
+                                            date=YESTERDAY
+                                        ),
                                         dcc.Loading(
-                                            dcc.Graph(figure=fig_nj)
+                                            dcc.Graph(figure=fig_nj, id='map-state')
                                         )
                                     ]
                                 )
@@ -279,7 +286,7 @@ app.layout = html.Div(children=[
                                                 multi=True
                                         ),
                                         dcc.Loading(
-                                            dcc.Graph(figure=fig_nj_line)
+                                            dcc.Graph(figure=fig_nj_line, id='line-state')
                                         )
                                     ]
                                 )
@@ -295,8 +302,7 @@ app.layout = html.Div(children=[
             )
         ],
         style={'margin': '50px'}
-    )
-
+    ),
     
 ])
 
@@ -322,6 +328,40 @@ def update_map_ny(value):
     fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, legend_orientation="h")
     return fig
 
+
+@app.callback(
+    [
+        dash.dependencies.Output('map-state', 'figure'),
+        dash.dependencies.Output('line-state', 'figure'),
+        dash.dependencies.Output('header-state', 'children')
+    ],
+    [
+        dash.dependencies.Input('value-state', 'value'), 
+        dash.dependencies.Input('date-state', 'date')
+    ]
+)
+def update_map_state(state_value, input_date):
+    # Map
+    nj_test = us_counties.df[(us_counties.df.state==state_value) & (us_counties.df.date==input_date)]
+    fig_nj = px.choropleth(nj_test,
+                        geojson=counties,
+                        locations='fips',
+                        color='new_cases',
+                        color_continuous_scale="Blues",
+                        range_color=(0, max(nj_test["new_cases"])),
+                        scope="usa",
+                        hover_name="county",
+                        hover_data=["date", "new_cases"],
+                        labels={'new_cases':'new cases'}
+                       )
+    fig_nj.update_geos(fitbounds="locations", visible=False)
+    fig_nj.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, legend_orientation="h")
+
+    # Line chart
+    nj_df = us_counties.df[(us_counties.df.state==state_value) & (us_counties.df.new_cases >= 0) & (us_counties.df.county != 'Unknown')]
+    fig_nj_line = px.line(nj_df, x="date", y="new_cases", color='county',
+                          labels={'date': 'Date', 'new_cases': 'New Cases', 'county': 'County'})
+    return fig_nj, fig_nj_line, '{} Counties'.format(state_value)
 
 
 if __name__ == '__main__':
