@@ -11,21 +11,20 @@ US data:
 * https://github.com/nytimes/covid-19-data/
 
 ## About
-Simple COVID19 dashboard made using [Streamlit](https://docs.streamlit.io/en/stable/getting_started.html) and deployed with [Heroku](https://www.heroku.com/python). Can be viewed on https://covid19-dashboard-tz.herokuapp.com/.
+Simple COVID19 dashboard made using [Dash](https://plotly.com/dash/) and deployed with [Heroku](https://www.heroku.com/python). Can be viewed on https://covid19-dashboard-tz.herokuapp.com/.
 
-To run app locally, you should have Streamlit installed.
+To run app locally, you should have Dash installed.
 ```
->> pip install streamlit
+>> pip install dash
 ```
 Then,
 ```
 >> cd covid19-dashboard
->> streamlit run covid19_data.py
+>> python covid19_dash.py
 ```
 
 Files:
 1. covid19_dashboard.ipynb - Python notebook 
-2. covid19_data.py - main app file that follows Streamlit workflow
+2. covid19_dash.py - main app file that follows Dash workflow
 3. Procfile - needed to deploy app, contains commands to run the app
 4. requirements.txt - List of Python libraries needed
-5. setup.sh - need to deploy app
