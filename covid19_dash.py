@@ -140,12 +140,7 @@ fig_nj.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, legend_orientation
 fig_nj.update_coloraxes(showscale=False)
 
 nj_df = us_counties.df[(us_counties.df.state=='New Jersey') & (us_counties.df.new_cases >= 0) & (us_counties.df.county != 'Unknown')]
-# fig_nj_line = px.line(nj_df, x="date", y="new_cases", color='county',
-#                       labels={'date': 'Date', 'new_cases': 'New Cases', 'county': 'County'})
 fig_nj_line = go.Figure()
-fig_nj_line.add_trace(go.Scatter(x=nj_df[nj_df.county == 'Somerset'].date, y=nj_df[nj_df.county == 'Somerset'].new_cases))
-fig_nj_line.add_trace(go.Scatter(x=nj_df[nj_df.county == 'Middlesex'].date, y=nj_df[nj_df.county == 'Somerset'].new_cases, visible='legendonly'))
-fig_nj_line.add_trace(go.Scatter(x=nj_df[nj_df.county == 'Bergen'].date, y=nj_df[nj_df.county == 'Somerset'].new_cases, visible='legendonly'))
 
 
 ## States
@@ -242,19 +237,15 @@ app.layout = html.Div(children=[
                                             initial_visible_month=YESTERDAY,
                                             date=YESTERDAY
                                         ),
-                                        dbc.Col(
-                                            [
-                                                dcc.Loading(
-                                                    dcc.Graph(id='map-ny', figure=fig)
-                                                ),
-                                                html.Div(
-                                                    dbc.Table.from_dataframe(nyc_test.sort_values('new_cases', ascending=False)[['county', 'new_cases']]),
-                                                    id='table-nyc'
-                                                )
-                                            ],
+                                        dcc.Loading(
+                                            dcc.Graph(id='map-ny', figure=fig, style={'height': '225px', 'overflow-y': 'auto'}),
+                                        ),
+                                        html.Div(
+                                            dbc.Table.from_dataframe(nyc_test.sort_values('new_cases', ascending=False)[['county', 'new_cases']]),
+                                            id='table-nyc',
+                                            style={'height': '200px', 'overflow-y': 'auto'}
                                         )
                                     ],
-                                    style={'height': '500px', 'overflow-y': 'auto'}
                                 )
                             ]),
                             dbc.Col([
@@ -329,9 +320,14 @@ app.layout = html.Div(children=[
                                             date=YESTERDAY
                                         ),
                                         dcc.Loading(
-                                            dcc.Graph(figure=fig_nj, id='map-state')
+                                            dcc.Graph(figure=fig_nj, id='map-state', style={'height': '250px', 'overflow-y': 'auto'})
+                                        ),
+                                        html.Div(
+                                            dbc.Table.from_dataframe(nj_test.sort_values('new_cases', ascending=False)[['county', 'new_cases']]),
+                                            id='table-states',
+                                            style={'height': '200px', 'overflow-y': 'auto'}
                                         )
-                                    ]
+                                    ],
                                 )
                             ]),
                             dbc.Col([
@@ -445,8 +441,6 @@ def update_map_state(state_value, input_date, input_counties):
 
     # Line chart
     state_df = us_counties.df[(us_counties.df.state==state_value) & (us_counties.df.new_cases >= 0) & (us_counties.df.county != 'Unknown')]
-    # fig_nj_line = px.line(state_df, x="date", y="new_cases", color='county',
-    #                       labels={'date': 'Date', 'new_cases': 'New Cases', 'county': 'County'})
 
     county_list = sorted(us_counties.df[(us_counties.df.state==state_value)].county.unique())
     fig_line = go.Figure()
