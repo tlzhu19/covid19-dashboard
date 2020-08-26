@@ -3,6 +3,7 @@ import dash_core_components as dcc
 import dash_bootstrap_components as dbc
 import dash_html_components as html
 import plotly.express as px
+import plotly.graph_objects as go
 import pandas as pd
 from flask_caching import Cache
 from datetime import date, datetime, timedelta
@@ -101,10 +102,11 @@ fig = px.choropleth(nyc_test,
                     scope="usa",
                     hover_name="county",
                     hover_data=["date", "new_cases"],
-                    labels={'new_cases':'new cases'}
+                    labels={'new_cases':'new cases'},
                    )
 fig.update_geos(fitbounds="locations", visible=False)
 fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, legend_orientation="h")
+fig.update_coloraxes(showscale=False)
 
 
 fig_nyc = px.line(nyc.cases_df, x="date", y="new_cases", color='county',
@@ -135,25 +137,25 @@ fig_nj = px.choropleth(nj_test,
                    )
 fig_nj.update_geos(fitbounds="locations", visible=False)
 fig_nj.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, legend_orientation="h")
+fig_nj.update_coloraxes(showscale=False)
 
 nj_df = us_counties.df[(us_counties.df.state=='New Jersey') & (us_counties.df.new_cases >= 0) & (us_counties.df.county != 'Unknown')]
-fig_nj_line = px.line(nj_df, x="date", y="new_cases", color='county',
-                      labels={'date': 'Date', 'new_cases': 'New Cases', 'county': 'County'})
+# fig_nj_line = px.line(nj_df, x="date", y="new_cases", color='county',
+#                       labels={'date': 'Date', 'new_cases': 'New Cases', 'county': 'County'})
+fig_nj_line = go.Figure()
+fig_nj_line.add_trace(go.Scatter(x=nj_df[nj_df.county == 'Somerset'].date, y=nj_df[nj_df.county == 'Somerset'].new_cases))
+fig_nj_line.add_trace(go.Scatter(x=nj_df[nj_df.county == 'Middlesex'].date, y=nj_df[nj_df.county == 'Somerset'].new_cases, visible='legendonly'))
+fig_nj_line.add_trace(go.Scatter(x=nj_df[nj_df.county == 'Bergen'].date, y=nj_df[nj_df.county == 'Somerset'].new_cases, visible='legendonly'))
 
 
 ## States
 states = States()
 
-def sort_state_data(df, column_name, n=50):
-    new_df = df[df['date']==YESTERDAY].sort_values(column_name, ascending=False).head(n)
+def sort_state_data(df, column_name, input_date=YESTERDAY, n=50):
+    new_df = df[df['date']==input_date].sort_values(column_name, ascending=False).head(n)
     new_df[' '] = range(1, n+1)
     new_df[column_name] = [ "{:,}".format(int(d)) for d in new_df[column_name].values ]
     return new_df
-
-# n = 10
-# top_n_new = states.df[states.df['date']==YESTERDAY].sort_values('new_cases', ascending=False).head(n)
-# top_n_total = states.df[states.df['date']==YESTERDAY].sort_values('cases', ascending=False).head(n)
-# top_n_deaths = states.df[states.df['date']==YESTERDAY].sort_values('deaths', ascending=False).head(n)
 
 top_n_new = sort_state_data(states.df, 'new_cases')
 top_n_total = sort_state_data(states.df, 'cases')
@@ -172,27 +174,51 @@ app.layout = html.Div(children=[
             ),
             html.Div(
                 [
-                    html.H3(children='US States ({})'.format(YESTERDAY)),
+                    html.H3(children='US States'),
+                    dcc.DatePickerSingle(
+                                            id='date-state-total',
+                                            min_date_allowed=states.df.date.unique()[0],
+                                            max_date_allowed=states.df.date.unique()[-1],
+                                            initial_visible_month=YESTERDAY,
+                                            date=YESTERDAY
+                                        ),
                     dbc.Row(
                         [
                             dbc.Col([
                                 dbc.CardHeader("New Cases"),
                                 dbc.Card(
-                                    dbc.Table.from_dataframe(top_n_new[[' ', 'state', 'new_cases']], striped=True, className='text-right'),
+                                    dbc.Spinner(
+                                        html.Div(
+                                            dbc.Table.from_dataframe(top_n_new[[' ', 'state', 'new_cases']],  
+                                                className='text-right',
+                                                
+                                            ), id='table-new-cases-state'),
+                                        color='primary'),
                                     style={'height': '300px', 'overflow-y': 'auto'}
                                 )
                             ]),
                             dbc.Col([
                                 dbc.CardHeader("Total Cases"),
                                 dbc.Card(
-                                    dbc.Table.from_dataframe(top_n_total[[' ', 'state', 'cases']], striped=True, className='text-right'),
+                                    dbc.Spinner(
+                                        html.Div(
+                                            dbc.Table.from_dataframe(top_n_total[[' ', 'state', 'cases']], 
+                                                className='text-right',
+                                                
+                                            ), id='table-cases-state'),
+                                        color='primary'),
                                     style={'height': '300px', 'overflow-y': 'auto'}
                                 )
                             ]),
                             dbc.Col([
                                 dbc.CardHeader("Total Deaths"),
                                 dbc.Card(
-                                    dbc.Table.from_dataframe(top_n_deaths[[' ', 'state', 'deaths']], striped=True, className='text-right'),
+                                    dbc.Spinner(
+                                        html.Div(
+                                            dbc.Table.from_dataframe(top_n_deaths[[' ', 'state', 'deaths']],
+                                                className='text-right',
+                                            ), id='table-deaths-state'),
+                                        color='primary'),
                                     style={'height': '300px', 'overflow-y': 'auto'}
                                 )
                             ]),
@@ -216,10 +242,19 @@ app.layout = html.Div(children=[
                                             initial_visible_month=YESTERDAY,
                                             date=YESTERDAY
                                         ),
-                                        dcc.Loading(
-                                            dcc.Graph(id='map-ny', figure=fig)
+                                        dbc.Col(
+                                            [
+                                                dcc.Loading(
+                                                    dcc.Graph(id='map-ny', figure=fig)
+                                                ),
+                                                html.Div(
+                                                    dbc.Table.from_dataframe(nyc_test.sort_values('new_cases', ascending=False)[['county', 'new_cases']]),
+                                                    id='table-nyc'
+                                                )
+                                            ],
                                         )
-                                    ]
+                                    ],
+                                    style={'height': '500px', 'overflow-y': 'auto'}
                                 )
                             ]),
                             dbc.Col([
@@ -303,11 +338,12 @@ app.layout = html.Div(children=[
                                 dbc.CardHeader("New Cases Over Time"),
                                 dbc.Card(
                                     [
-                                        # dcc.Dropdown(
-                                        #         options=[{'label': c, 'value': c} for c in us_counties.df[(us_counties.df.state=='New Jersey')].county.unique()],
-                                        #         value='Somerset',
-                                        #         multi=True
-                                        # ),
+                                        dcc.Dropdown(
+                                                options=[{'label': c, 'value': c} for c in sorted(us_counties.df[(us_counties.df.state=='New Jersey')].county.unique())],
+                                                value=['Somerset',' Middlesex'],
+                                                multi=True,
+                                                id='state-dropdown'
+                                        ),
                                         dcc.Loading(
                                             dcc.Graph(figure=fig_nj_line, id='line-state')
                                         )
@@ -331,7 +367,29 @@ app.layout = html.Div(children=[
 
 
 @app.callback(
-    dash.dependencies.Output('map-ny', 'figure'),
+    [
+        dash.dependencies.Output('table-new-cases-state', 'children'),
+        dash.dependencies.Output('table-cases-state', 'children'),
+        dash.dependencies.Output('table-deaths-state', 'children')
+    ],
+    [
+        dash.dependencies.Input('date-state-total', 'date')
+    ]
+)
+def update_state_tables(input_date):
+    results = []
+    for name in ['new_cases', 'cases', 'deaths']:
+        df = sort_state_data(states.df, name, input_date)[[' ', 'state', name]]
+        results.append(dbc.Table.from_dataframe(df, className='text-right'))
+
+    return results
+
+
+@app.callback(
+    [
+        dash.dependencies.Output('map-ny', 'figure'),
+        dash.dependencies.Output('table-nyc', 'children')
+    ],
     [dash.dependencies.Input('date-ny', 'date')]
 )
 def update_map_ny(value):
@@ -349,21 +407,25 @@ def update_map_ny(value):
                        )
     fig.update_geos(fitbounds="locations", visible=False)
     fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, legend_orientation="h")
-    return fig
+    fig.update_coloraxes(showscale=False)
+
+    return fig, dbc.Table.from_dataframe(nyc_test.sort_values('new_cases', ascending=False)[['county', 'new_cases']])
 
 
 @app.callback(
     [
         dash.dependencies.Output('map-state', 'figure'),
         dash.dependencies.Output('line-state', 'figure'),
-        dash.dependencies.Output('header-state', 'children')
+        dash.dependencies.Output('header-state', 'children'),
+        dash.dependencies.Output('state-dropdown', 'options')
     ],
     [
         dash.dependencies.Input('value-state', 'value'), 
-        dash.dependencies.Input('date-state', 'date')
+        dash.dependencies.Input('date-state', 'date'),
+        dash.dependencies.Input('state-dropdown', 'value')
     ]
 )
-def update_map_state(state_value, input_date):
+def update_map_state(state_value, input_date, input_counties):
     # Map
     nj_test = us_counties.df[(us_counties.df.state==state_value) & (us_counties.df.date==input_date)]
     fig_nj = px.choropleth(nj_test,
@@ -379,12 +441,25 @@ def update_map_state(state_value, input_date):
                        )
     fig_nj.update_geos(fitbounds="locations", visible=False)
     fig_nj.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0}, legend_orientation="h")
+    fig_nj.update_coloraxes(showscale=False)
 
     # Line chart
-    nj_df = us_counties.df[(us_counties.df.state==state_value) & (us_counties.df.new_cases >= 0) & (us_counties.df.county != 'Unknown')]
-    fig_nj_line = px.line(nj_df, x="date", y="new_cases", color='county',
-                          labels={'date': 'Date', 'new_cases': 'New Cases', 'county': 'County'})
-    return fig_nj, fig_nj_line, '{} Counties'.format(state_value)
+    state_df = us_counties.df[(us_counties.df.state==state_value) & (us_counties.df.new_cases >= 0) & (us_counties.df.county != 'Unknown')]
+    # fig_nj_line = px.line(state_df, x="date", y="new_cases", color='county',
+    #                       labels={'date': 'Date', 'new_cases': 'New Cases', 'county': 'County'})
+
+    county_list = sorted(us_counties.df[(us_counties.df.state==state_value)].county.unique())
+    fig_line = go.Figure()
+    for county in county_list:
+        if county in input_counties or input_counties==[]:
+            fig_line.add_trace(go.Scatter(x=state_df[state_df.county == county].date, y=state_df[state_df.county == county].new_cases, name=county))
+        else:
+            fig_line.add_trace(go.Scatter(x=state_df[state_df.county == county].date, y=state_df[state_df.county == county].new_cases, name=county, visible='legendonly'))
+
+
+    dropdown_options = [{'label': c, 'value': c} for c in county_list]
+
+    return fig_nj, fig_line, '{} Counties'.format(state_value), dropdown_options
 
 
 if __name__ == '__main__':
