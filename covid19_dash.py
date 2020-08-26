@@ -4,6 +4,7 @@ import dash_bootstrap_components as dbc
 import dash_html_components as html
 import plotly.express as px
 import pandas as pd
+from flask_caching import Cache
 from datetime import date, datetime, timedelta
 from urllib.request import urlopen
 import json
@@ -15,6 +16,13 @@ external_stylesheets = [dbc.themes.BOOTSTRAP, 'https://cdnjs.cloudflare.com/ajax
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app.title = 'COVID19 Dashboard'
 server = app.server
+
+cache = Cache(app.server, config={
+    'CACHE_TYPE': 'filesystem',
+    'CACHE_DIR': 'cache-directory'
+})
+
+TIMEOUT = 60
 
 
 class NYCData:
@@ -49,6 +57,7 @@ class NYCData:
 
 
 class Counties:
+    @cache.memoize(timeout=TIMEOUT)
     def __init__(self):
         counties_url = 'https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv'
         counties_df = pd.read_csv(counties_url, dtype=str)
@@ -134,10 +143,21 @@ fig_nj_line = px.line(nj_df, x="date", y="new_cases", color='county',
 
 ## States
 states = States()
-n = 5
-top_n_new = states.df[states.df['date']==YESTERDAY].sort_values('new_cases', ascending=False).head(n)
-top_n_total = states.df[states.df['date']==YESTERDAY].sort_values('cases', ascending=False).head(n)
-top_n_deaths = states.df[states.df['date']==YESTERDAY].sort_values('deaths', ascending=False).head(n)
+
+def sort_state_data(df, column_name, n=50):
+    new_df = df[df['date']==YESTERDAY].sort_values(column_name, ascending=False).head(n)
+    new_df[' '] = range(1, n+1)
+    new_df[column_name] = [ "{:,}".format(int(d)) for d in new_df[column_name].values ]
+    return new_df
+
+# n = 10
+# top_n_new = states.df[states.df['date']==YESTERDAY].sort_values('new_cases', ascending=False).head(n)
+# top_n_total = states.df[states.df['date']==YESTERDAY].sort_values('cases', ascending=False).head(n)
+# top_n_deaths = states.df[states.df['date']==YESTERDAY].sort_values('deaths', ascending=False).head(n)
+
+top_n_new = sort_state_data(states.df, 'new_cases')
+top_n_total = sort_state_data(states.df, 'cases')
+top_n_deaths = sort_state_data(states.df, 'deaths')
 
 
 # LAYOUT
@@ -152,25 +172,28 @@ app.layout = html.Div(children=[
             ),
             html.Div(
                 [
-                    html.H3(children='US States'),
+                    html.H3(children='US States ({})'.format(YESTERDAY)),
                     dbc.Row(
                         [
                             dbc.Col([
                                 dbc.CardHeader("New Cases"),
                                 dbc.Card(
-                                    dbc.Table.from_dataframe(top_n_new[['state', 'new_cases']], striped=True, hover=True)
+                                    dbc.Table.from_dataframe(top_n_new[[' ', 'state', 'new_cases']], striped=True, className='text-right'),
+                                    style={'height': '300px', 'overflow-y': 'auto'}
                                 )
                             ]),
                             dbc.Col([
                                 dbc.CardHeader("Total Cases"),
                                 dbc.Card(
-                                    dbc.Table.from_dataframe(top_n_total[['state', 'cases']], striped=True, hover=True)
+                                    dbc.Table.from_dataframe(top_n_total[[' ', 'state', 'cases']], striped=True, className='text-right'),
+                                    style={'height': '300px', 'overflow-y': 'auto'}
                                 )
                             ]),
                             dbc.Col([
                                 dbc.CardHeader("Total Deaths"),
                                 dbc.Card(
-                                    dbc.Table.from_dataframe(top_n_total[['state', 'deaths']], striped=True, hover=True)
+                                    dbc.Table.from_dataframe(top_n_deaths[[' ', 'state', 'deaths']], striped=True, className='text-right'),
+                                    style={'height': '300px', 'overflow-y': 'auto'}
                                 )
                             ]),
                         ],
@@ -203,17 +226,17 @@ app.layout = html.Div(children=[
                                 dbc.CardHeader("New Cases Over Time"),
                                 dbc.Card(
                                     [
-                                        dcc.Dropdown(
-                                            options=[
-                                                {'label': 'Brooklyn', 'value': 'Brooklyn'},
-                                                {'label': 'Bronx', 'value': 'Bronx'},
-                                                {'label': 'Manhattan', 'value': 'Manhattan'},
-                                                {'label': 'Queens', 'value': 'Queens'},
-                                                {'label': 'Staten Island', 'value': 'Staten Island'},
-                                            ],
-                                            value=['Brooklyn'],
-                                            multi=True
-                                        ),
+                                        # dcc.Dropdown(
+                                        #     options=[
+                                        #         {'label': 'Brooklyn', 'value': 'Brooklyn'},
+                                        #         {'label': 'Bronx', 'value': 'Bronx'},
+                                        #         {'label': 'Manhattan', 'value': 'Manhattan'},
+                                        #         {'label': 'Queens', 'value': 'Queens'},
+                                        #         {'label': 'Staten Island', 'value': 'Staten Island'},
+                                        #     ],
+                                        #     value=['Brooklyn'],
+                                        #     multi=True
+                                        # ),
                                         dcc.Loading(
                                             dcc.Graph(figure=fig_nyc)
                                         )
@@ -253,7 +276,7 @@ app.layout = html.Div(children=[
                     html.H3('New Jersey Counties', id='header-state'),
                     dcc.Dropdown(
                                     id='value-state',
-                                    options=[{'label': s, 'value': s} for s in states.df.state.unique()],
+                                    options=[{'label': s, 'value': s} for s in sorted(states.df.state.unique())],
                                     value='New Jersey',
                                     clearable=False
                     ), 
@@ -280,11 +303,11 @@ app.layout = html.Div(children=[
                                 dbc.CardHeader("New Cases Over Time"),
                                 dbc.Card(
                                     [
-                                        dcc.Dropdown(
-                                                options=[{'label': c, 'value': c} for c in us_counties.df[(us_counties.df.state=='New Jersey')].county.unique()],
-                                                value='Somerset',
-                                                multi=True
-                                        ),
+                                        # dcc.Dropdown(
+                                        #         options=[{'label': c, 'value': c} for c in us_counties.df[(us_counties.df.state=='New Jersey')].county.unique()],
+                                        #         value='Somerset',
+                                        #         multi=True
+                                        # ),
                                         dcc.Loading(
                                             dcc.Graph(figure=fig_nj_line, id='line-state')
                                         )
