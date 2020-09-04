@@ -11,7 +11,7 @@ US data:
 * https://github.com/nytimes/covid-19-data/
 
 ## About
-Simple COVID19 dashboard made using [Dash](https://plotly.com/dash/) and deployed with [Heroku](https://www.heroku.com/python). Can be viewed on https://covid19-dashboard-tz.herokuapp.com/.
+COVID19 dashboard made using [Dash](https://plotly.com/dash/) and deployed with [Heroku](https://www.heroku.com/python). Can be viewed on https://covid19-dashboard-tz.herokuapp.com/.
 
 To run app locally, you should have Dash installed.
 ```
@@ -28,3 +28,14 @@ Files:
 2. covid19_dash.py - main app file that follows Dash workflow
 3. Procfile - needed to deploy app, contains commands to run the app
 4. requirements.txt - List of Python libraries needed
+
+### Website Preview
+Can be viewed on https://covid19-dashboard-tz.herokuapp.com/.
+Three sections:
+1. Overall USA data
+2. NYC data - new cases, deaths, hospilazations
+3. County level data - can change the state, the default is NJ
+
+![USA overall data](https://github.com/tlzhu19/covid19-dashboard/blob/master/images/image_1.png)
+![NYC data](https://github.com/tlzhu19/covid19-dashboard/blob/master/images/image_2.png)
+![County data](https://github.com/tlzhu19/covid19-dashboard/blob/master/images/image_3.png)
