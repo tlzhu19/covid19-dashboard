@@ -87,18 +87,20 @@ class States:
         self.df = states_df
 
 
-
 # FIGURES
 ## NYC
-YESTERDAY = (date.today() - timedelta(2)).strftime("%Y-%m-%d")
+# YESTERDAY = (date.today() - timedelta(2)).strftime("%Y-%m-%d")
 nyc = NYCData()
+YESTERDAY = nyc.cases_df['date'].unique()[-1]
 nyc_test = nyc.cases_df[nyc.cases_df['date'] == YESTERDAY]
+nyc_new_cases = nyc_test["new_cases"]
+max_new_cases = max(nyc_new_cases) if len(nyc_new_cases) else 0
 fig = px.choropleth(nyc_test,
                     geojson=counties,
                     locations='fips',
                     color='new_cases',
                     color_continuous_scale="Blues",
-                    range_color=(0, max(nyc_test["new_cases"])),
+                    range_color=(0, max_new_cases),
                     scope="usa",
                     hover_name="county",
                     hover_data=["date", "new_cases"],
