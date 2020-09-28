@@ -27,6 +27,7 @@ TIMEOUT = 60
 
 
 class NYCData:
+    @cache.memoize(timeout=TIMEOUT)
     def __init__(self):
         self.nyc_boro_url = 'https://raw.githubusercontent.com/nychealth/coronavirus-data/master/boro/boroughs-case-hosp-death.csv'
         self.nyc_tests_url = 'https://raw.githubusercontent.com/nychealth/coronavirus-data/master/tests.csv'
@@ -73,6 +74,7 @@ class Counties:
         self.df = counties_df
 
 class States:
+    @cache.memoize(timeout=TIMEOUT)
     def __init__(self):
         states_url = 'https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-states.csv'
         states_df = pd.read_csv(states_url)
