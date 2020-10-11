@@ -451,9 +451,19 @@ def update_map_state(state_value, input_date, input_counties):
     fig_line = go.Figure()
     for county in county_list:
         if county in input_counties or input_counties==[]:
-            fig_line.add_trace(go.Scatter(x=state_df[state_df.county == county].date, y=state_df[state_df.county == county].new_cases, name=county))
+            fig_line.add_trace(go.Scatter(x=state_df[state_df.county == county].date, y=state_df[state_df.county == county].new_cases, name=county,
+                hovertemplate=
+                '<b>Date</b>: %{x}'+
+                '<br><b>New Cases</b>: %{y}<br>'+
+                '<b>County</b>: %{text}', 
+                text=[county for i in range(len(state_df[state_df.county == county].new_cases))]))
         else:
-            fig_line.add_trace(go.Scatter(x=state_df[state_df.county == county].date, y=state_df[state_df.county == county].new_cases, name=county, visible='legendonly'))
+            fig_line.add_trace(go.Scatter(x=state_df[state_df.county == county].date, y=state_df[state_df.county == county].new_cases, name=county, visible='legendonly',
+                hovertemplate=
+                '<b>Date</b>: %{x}'+
+                '<br><b>New Cases</b>: %{y}<br>'+
+                '<b>County</b>: %{text}',
+                text=[county for i in range(len(state_df[state_df.county == county].new_cases))]))
 
 
     dropdown_options = [{'label': c, 'value': c} for c in county_list]
