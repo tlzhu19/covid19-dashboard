@@ -61,7 +61,8 @@ class NYCData:
 class Counties:
     @cache.memoize(timeout=TIMEOUT)
     def __init__(self):
-        counties_url = 'https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv'
+        # counties_url = 'https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv'
+        counties_url = 'https://raw.githubusercontent.com/tlzhu19/covid19-data/master/us-counties-filtered.csv'
         counties_df = pd.read_csv(counties_url, dtype=str)
 
         types_dict = {'cases': int, 'deaths': int}
@@ -306,7 +307,7 @@ app.layout = html.Div(children=[
                     html.H3('New Jersey Counties', id='header-state'),
                     dcc.Dropdown(
                                     id='value-state',
-                                    options=[{'label': s, 'value': s} for s in sorted(states.df.state.unique())],
+                                    options=[{'label': s, 'value': s} for s in sorted(us_counties.df.state.unique())],
                                     value='New Jersey',
                                     clearable=False
                     ), 
