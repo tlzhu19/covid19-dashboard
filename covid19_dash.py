@@ -418,6 +418,7 @@ def update_map_ny(value):
         dash.dependencies.Output('map-state', 'figure'),
         dash.dependencies.Output('line-state', 'figure'),
         dash.dependencies.Output('header-state', 'children'),
+        dash.dependencies.Output('table-states', 'children'),
         dash.dependencies.Output('state-dropdown', 'options')
     ],
     [
@@ -465,10 +466,12 @@ def update_map_state(state_value, input_date, input_counties):
                 '<b>County</b>: %{text}',
                 text=[county for i in range(len(state_df[state_df.county == county].new_cases))]))
 
+    # Table
+    state_table = dbc.Table.from_dataframe(nj_test.sort_values('new_cases', ascending=False)[['county', 'new_cases']])
 
     dropdown_options = [{'label': c, 'value': c} for c in county_list]
 
-    return fig_nj, fig_line, '{} Counties'.format(state_value), dropdown_options
+    return fig_nj, fig_line, '{} Counties'.format(state_value), state_table, dropdown_options
 
 
 if __name__ == '__main__':
