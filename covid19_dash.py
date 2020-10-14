@@ -147,6 +147,7 @@ fig_nj.update_coloraxes(showscale=False)
 nj_df = us_counties.df[(us_counties.df.state=='New Jersey') & (us_counties.df.new_cases >= 0) & (us_counties.df.county != 'Unknown')]
 fig_nj_line = go.Figure()
 
+counties_dates = [d for d in us_counties.df.date.unique()]
 
 ## States
 states = States()
@@ -161,6 +162,7 @@ top_n_new = sort_state_data(states.df, 'new_cases')
 top_n_total = sort_state_data(states.df, 'cases')
 top_n_deaths = sort_state_data(states.df, 'deaths')
 
+states_dates = states.df.date.unique()
 
 # LAYOUT
 app.layout = html.Div(children=[
@@ -177,10 +179,10 @@ app.layout = html.Div(children=[
                     html.H3(children='US States'),
                     dcc.DatePickerSingle(
                                             id='date-state-total',
-                                            min_date_allowed=states.df.date.unique()[0],
-                                            max_date_allowed=states.df.date.unique()[-1],
-                                            initial_visible_month=YESTERDAY,
-                                            date=YESTERDAY
+                                            min_date_allowed=states_dates[0],
+                                            max_date_allowed=states_dates[-1],
+                                            initial_visible_month=states_dates[-1],
+                                            date=states_dates[-1]
                                         ),
                     dbc.Row(
                         [
@@ -239,8 +241,8 @@ app.layout = html.Div(children=[
                                             id='date-ny',
                                             min_date_allowed=nyc_dates[0],
                                             max_date_allowed=nyc_dates[-1],
-                                            initial_visible_month=YESTERDAY,
-                                            date=YESTERDAY
+                                            initial_visible_month=nyc_dates[-1],
+                                            date=nyc_dates[-1]
                                         ),
                                         dcc.Loading(
                                             dcc.Graph(id='map-ny', figure=fig, style={'height': '225px', 'overflow-y': 'auto'}),
@@ -319,10 +321,10 @@ app.layout = html.Div(children=[
                                     [
                                         dcc.DatePickerSingle(
                                             id='date-state',
-                                            min_date_allowed=nyc_dates[0],
-                                            max_date_allowed=nyc_dates[-1],
-                                            initial_visible_month=YESTERDAY,
-                                            date=YESTERDAY
+                                            min_date_allowed=counties_dates[0],
+                                            max_date_allowed=counties_dates[-1],
+                                            initial_visible_month=counties_dates[-1],
+                                            date=counties_dates[-1]
                                         ),
                                         dcc.Loading(
                                             dcc.Graph(figure=fig_nj, id='map-state', style={'height': '250px', 'overflow-y': 'auto'})
