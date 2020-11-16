@@ -29,8 +29,8 @@ TIMEOUT = 60
 class NYCData:
     @cache.memoize(timeout=TIMEOUT)
     def __init__(self):
-        self.nyc_boro_url = 'https://raw.githubusercontent.com/nychealth/coronavirus-data/master/boro/boroughs-case-hosp-death.csv'
-        self.nyc_tests_url = 'https://raw.githubusercontent.com/nychealth/coronavirus-data/master/tests.csv'
+        self.nyc_boro_url = 'https://raw.githubusercontent.com/nychealth/coronavirus-data/master/trends/data-by-day.csv'
+        self.nyc_tests_url = 'https://raw.githubusercontent.com/nychealth/coronavirus-data/master/trends/tests.csv'
         self.nyc_boro_df = pd.read_csv(self.nyc_boro_url)
         self.nyc_tests_df = pd.read_csv(self.nyc_tests_url)
 
@@ -40,16 +40,21 @@ class NYCData:
                                 'Manhattan': '36061',
                                 'Staten Island': '36085'}
 
-        self.cases_df = self.clean_nyc_data_by_metric('CASE_COUNT')
-        self.hospitalized_df = self.clean_nyc_data_by_metric('HOSPITALIZED_COUNT')
-        self.deaths_df = self.clean_nyc_data_by_metric('DEATH_COUNT')
+        self.cases_df = self.clean_nyc_data_by_metric('_CASE_COUNT')
+        self.hospitalized_df = self.clean_nyc_data_by_metric('_HOSPITALIZED_COUNT')
+        self.deaths_df = self.clean_nyc_data_by_metric('_DEATH_COUNT')
 
     def clean_nyc_data_by_metric(self, metric):
-        column_filter = self.nyc_boro_df.columns.to_series().str.contains(metric)
-        column_filter.DATE_OF_INTEREST = True
+        column_filter = self.nyc_boro_df.columns.to_series().str.endswith(metric)
+        column_filter.date_of_interest = True
         columns = self.nyc_boro_df.columns[column_filter]
         nyc_cases = self.nyc_boro_df[columns]
-        nyc_cases.columns = ['date', 'Brooklyn', 'Bronx', 'Manhattan', 'Queens', 'Staten Island']
+        '''
+        Column names after filtering: 
+        ['date_of_interest', 'BX_CASE_COUNT', 'BK_CASE_COUNT', 'MN_CASE_COUNT',
+       'QN_CASE_COUNT', 'SI_CASE_COUNT']
+        '''
+        nyc_cases.columns = ['date', 'Bronx', 'Brooklyn', 'Manhattan', 'Queens', 'Staten Island']
 
         nyc_cases_tidy = pd.melt(nyc_cases, ["date"], var_name="county", value_name="new_cases")
         nyc_cases_tidy['state'] = ['New York' for i in range(len(nyc_cases_tidy))]
