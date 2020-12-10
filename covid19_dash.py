@@ -54,7 +54,20 @@ class NYCData:
         ['date_of_interest', 'BX_CASE_COUNT', 'BK_CASE_COUNT', 'MN_CASE_COUNT',
        'QN_CASE_COUNT', 'SI_CASE_COUNT']
         '''
-        nyc_cases.columns = ['date', 'Bronx', 'Brooklyn', 'Manhattan', 'Queens', 'Staten Island']
+
+        original_prefixes = {'da': 'date', 'BX': 'Bronx', 'BK': 'Brooklyn', 'MN': 'Manhattan', 'QN': 'Queens', 'SI': 'Staten Island'}
+       
+        new_column_names, columns_to_keep = [], []
+        for column_name in nyc_cases.columns:
+            prefix = column_name[:2]
+            if prefix in original_prefixes:
+                new_column_names.append(original_prefixes[prefix])
+                columns_to_keep.append(original_prefixes[prefix])
+            else:
+                new_column_names.append(column_name)
+
+        nyc_cases.columns = new_column_names
+        nyc_cases = nyc_cases[columns_to_keep]
 
         nyc_cases_tidy = pd.melt(nyc_cases, ["date"], var_name="county", value_name="new_cases")
         nyc_cases_tidy['state'] = ['New York' for i in range(len(nyc_cases_tidy))]
