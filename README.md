@@ -4,8 +4,8 @@
 
 NYC data:
 * https://projects.thecity.nyc/2020_03_covid-19-tracker/
-* https://github.com/nychealth/coronavirus-data/blob/master/boro/boroughs-case-hosp-death.csv
-* https://github.com/nychealth/coronavirus-data/blob/master/tests.csv
+* https://github.com/nychealth/coronavirus-data
+  * https://github.com/nychealth/coronavirus-data/blob/master/trends/data-by-day.csv
 
 US data:
 * https://github.com/nytimes/covid-19-data/
